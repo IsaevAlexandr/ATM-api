@@ -1,16 +1,12 @@
 class View {
     showDetails(ATM) {
-        return {
-            balance: ATM.account.balance,
-            cardNumbe: ATM.account.cardNumber,
-            lastErrorMessage: ATM.messages.length > 0 ? ATM.messages[ATM.messages.length - 1].message : 'Ошибок нет!'
-        }
+        return { balance: ATM.account.balance, cardNumber: ATM.account.cardNumber }
     }
     showBalance(ATM) {
         return ATM.account.balance;
     }
-    insertCardMessage() {
-        return { message: 'Please insert you card to see details' }
+    showMessage(ATM) {
+        return { message: ATM.messages.length > 0 ? ATM.messages[ATM.messages.length - 1].message : 'Please insert you card to see details' }
     }
 }
 
@@ -43,14 +39,14 @@ class ATM {
     showDetails() {
         return this.isCardInserted() ?
             this.view.showDetails(this) :
-            this.view.insertCardMessage()
+            this.view.showMessage(this);
     }
 
 
     getBalance() {
         return this.isCardInserted() ?
             this.view.showBalance(this) :
-            this.view.insertCardMessage()
+            this.view.showMessage(this);
     }
     putMoney(value) {
         if (value && this.account && typeof value === 'number') {
@@ -72,7 +68,6 @@ class ATM {
                     return this.messages.push({ date: new Date().toLocaleString(), message: 'please enter the value' });
                 }
             }
-
         } else {
             return this.messages.push({ date: new Date().toLocaleString(), message: 'Insert your card please to get you balance' });
         }
@@ -98,6 +93,7 @@ class ATM {
      * return card from ATM
      */
     returnCard() {
+        this.resetmessages();
         return this.account = null;
     }
 
@@ -106,7 +102,13 @@ class ATM {
      * @return {Boolean}
      */
     isCardInserted() {
-        return !!this.account;
+        if (this.account) {
+            return true;
+        } else {
+            return false;
+        }
+
+
     }
 
     /**
@@ -154,30 +156,40 @@ class Card {
 }
 
 let myCard = new Card('1234', 846, 555);
-// let view = new View();
 let atm = new ATM();
-console.log(atm.showDetails());
-/* добавим нашу карту в память банкомата */
+/* пробуем добавить карту в хранилище, не передавая аргументов */
 atm.addToStorage();
 console.log(atm.showDetails());
+
+/* добавляем карту в хранилище */
 atm.addToStorage(myCard);
-console.log(atm.showDetails());
-/* Пробуем ввести неверный пин */
-console.log(atm.getBalance());
+
+/* пробуем ввести некорректный пин */
 atm.insertCard(myCard, 55)
 console.log(atm.showDetails());
 
-
+/* Вводим правельные данные */
 atm.insertCard(myCard, 555)
 console.log(atm.showDetails());
+
+/* кладем деньги на счет */
 atm.putMoney(500);
 console.log(atm.showDetails());
 
-
-/* Вводим верные данные */
+/* снимаем деньги */
 atm.getMoney(300);
 console.log(atm.showDetails());
+
+/* возвращаем карту */
 atm.returnCard();
 console.log(atm.showDetails());
+
+/* пробуем вызвать команту не передавая аргументов */
 atm.insertCard();
 console.log(atm.showDetails());
+
+/* вставляем карту, данные о которой есть в хранилище */
+atm.insertCard({ cardNumber: '999', balance: 1000, pin: 1234 }, 1234)
+
+console.log(atm.showDetails())
+console.log(atm.getBalance())

@@ -49,7 +49,7 @@ class ATM {
             this.view.showMessage(this);
     }
     putMoney(value) {
-        if (value && this.account && typeof value === 'number') {
+        if (this.isCardInserted() && value && typeof value === 'number') {
             return this.account.balance += value;
         } else {
             return this.messages.push({ date: new Date().toLocaleString(), message: 'error with put money!' });
@@ -79,7 +79,7 @@ class ATM {
      * @param {Number} pin 
      */
     insertCard(card, pin) {
-        if (!this.account && card && pin) {
+        if (!this.isCardInserted() && card && pin) {
             return this.isCorrectCard(card.cardNumber, pin) ?
                 this.account = card :
                 this.messages.push({ date: new Date().toLocaleString(), message: 'incorrect card or pin, check you card and try again' });
@@ -102,17 +102,13 @@ class ATM {
      * @return {Boolean}
      */
     isCardInserted() {
-        if (this.account) {
-            return true;
-        } else {
-            return false;
-        }
-
-
+        return !!this.account;
     }
 
     /**
      * adding card to ATM storage
+     * 
+     * -need to validate this
      * @param {Object} card
      */
     addToStorage(card) {

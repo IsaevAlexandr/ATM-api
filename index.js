@@ -3,17 +3,14 @@ class View {
         return {
             balance: ATM.account.balance,
             cardNumbe: ATM.account.cardNumber,
-            message: ATM.errorLog.length > 0 ? ATM.errorLog[ATM.errorLog.length - 1].message : 'Ошибок нет!'
+            lastErrorMessage: ATM.messages.length > 0 ? ATM.messages[ATM.messages.length - 1].message : 'Ошибок нет!'
         }
     }
     showBalance(ATM) {
         return ATM.account.balance;
     }
     insertCardMessage() {
-        return { message: 'Please insert you card!' }
-    }
-    showErrors(ATM) {
-        return { message: ATM.errorLog.length > 0 ? ATM.errorLog[ATM.errorLog.length - 1].message : 'Ошибок нет!' }
+        return { message: 'Please insert you card to see details' }
     }
 }
 
@@ -28,7 +25,7 @@ class ATM {
 
         this.view = view;
         this.account = null;
-        this.errorLog = [];
+        this.messages = [];
         this.storage = [{
                 cardNumber: '999',
                 balance: 1000,
@@ -44,12 +41,11 @@ class ATM {
     }
 
     showDetails() {
-        if (this.isCardInserted()) {
-            return this.view.showDetails(this);
-        } else {
-            return this.view.showErrors(this);
-        }
+        return this.isCardInserted() ?
+            this.view.showDetails(this) :
+            this.view.insertCardMessage()
     }
+
 
     getBalance() {
         return this.isCardInserted() ?
@@ -60,7 +56,7 @@ class ATM {
         if (value && this.account && typeof value === 'number') {
             return this.account.balance += value;
         } else {
-            return this.errorLog.push({ date: new Date().toLocaleString(), message: 'error with put money!' });
+            return this.messages.push({ date: new Date().toLocaleString(), message: 'error with put money!' });
         }
     }
     getMoney(value) {
@@ -69,16 +65,16 @@ class ATM {
                 if (value <= this.account.balance) {
                     return this.account.balance -= value;
                 } else {
-                    return this.errorLog.push({ date: new Date().toLocaleString(), message: 'the value is greater then you card balance' });
+                    return this.messages.push({ date: new Date().toLocaleString(), message: 'the value is greater then you card balance' });
                 }
             } else {
                 {
-                    return this.errorLog.push({ date: new Date().toLocaleString(), message: 'please enter the value' });
+                    return this.messages.push({ date: new Date().toLocaleString(), message: 'please enter the value' });
                 }
             }
 
         } else {
-            return this.errorLog.push({ date: new Date().toLocaleString(), message: 'Insert your card please to get you balance' });
+            return this.messages.push({ date: new Date().toLocaleString(), message: 'Insert your card please to get you balance' });
         }
     }
 
@@ -91,9 +87,9 @@ class ATM {
         if (!this.account && card && pin) {
             return this.isCorrectCard(card.cardNumber, pin) ?
                 this.account = card :
-                this.errorLog.push({ date: new Date().toLocaleString(), message: 'incorrect card or pin, check you card and try again' });
+                this.messages.push({ date: new Date().toLocaleString(), message: 'incorrect card or pin, check you card and try again' });
         } else {
-            this.errorLog.push({ date: new Date().toLocaleString(), message: 'incorrect card or pin, check you card and try again' });
+            this.messages.push({ date: new Date().toLocaleString(), message: 'incorrect card or pin, check you card and try again' });
             return false;
         }
     }
@@ -102,7 +98,6 @@ class ATM {
      * return card from ATM
      */
     returnCard() {
-        this.resetErrorLog()
         return this.account = null;
     }
 
@@ -121,7 +116,7 @@ class ATM {
     addToStorage(card) {
         return card ?
             this.storage.push(card) :
-            this.errorLog.push({ date: new Date().toLocaleString(), message: 'You must enter any object to store it!' })
+            this.messages.push({ date: new Date().toLocaleString(), message: 'You must enter any object to store it!' })
     }
 
     /**
@@ -143,8 +138,8 @@ class ATM {
         }
     }
 
-    resetErrorLog() {
-        return this.errorLog = [];
+    resetmessages() {
+        return this.messages = [];
     }
 
 }

@@ -1,7 +1,28 @@
 /**
+ * @class Message
+ */
+class Message {
+    constructor(message) {
+        this.date = new Date().toLocaleString();
+        this.message = message;
+        return this;
+    }
+}
+
+/**
+ * @class Card
+ */
+class Card {
+    constructor(cardNumber, balance, pin) {
+        this.cardNumber = cardNumber;
+        this.balance = balance;
+        this.pin = pin;
+        return this;
+    }
+}
+
+/**
  * @class ATM 
- * class representing the realtization of the ATM, 
- * the view is made in a separate class
  */
 class ATM {
     constructor() {
@@ -25,48 +46,57 @@ class ATM {
     }
 
     /**
-     * Метод добавляет деньги в банкомат и на счет карты
-     * @param {Object} value 
+     * Сообщаем экземпляру объекта банкомата о карте
+     * (доп. проверки не реализованы)
+     * @param {Object} card
      */
-    putMoney(value) {
-        if (this.isCardInserted()) {
-            console.log(1);
-            if (typeof value === 'object') {
-                this.account.balance += this.summToNumber(value);
-                this.addMoneyToATMCash(value);
-            } else {
-                this.messages.push({ date: new Date().toLocaleString(), message: 'Не правильный формат денег!' });
+    addCardToStorage(card) {
+        return card ?
+            this.storage.push(card) :
+            this.messages.push(new Message('Необходимо указать карту'))
+    }
+
+    /**
+     * Вставить карту в банкомат
+     * @param {Object} card 
+     * @param {Number} pin 
+     */
+    insertCard(card, pin) {
+        if (!this._isCardInserted()) {
+            if (typeof card === 'object' && typeof pin === 'number') {
+                return this._isCorrectCard(card.cardNumber, pin) ?
+                    this.account = card :
+                    this.messages.push(new Message('Не правильный pin код'));
             }
         } else {
-            this.messages.push({ date: new Date().toLocaleString(), message: 'Необходимо вставить карту для совершения действия с деньгами' });
-        }
-
-    }
-
-    summToNumber(obj) {
-        let sum = 0,
-            i;
-        for (i in obj) {
-            sum += obj[i] * +i;
-        }
-        return sum;
-    }
-
-    removeMoneyFromATMCash(obj) {
-        for (let i in obj) {
-
-            this.cash[i] -= obj[i]
-        }
-    }
-    addMoneyToATMCash(obj) {
-        for (let i in obj) {
-            this.cash[i] += obj[i]
+            return this.messages.push(new Message('В банкомате уже находится карта'));
         }
     }
 
+    /**
+     * Метод добавляет деньги в банкомат и на счет карты
+     * @param {Object} MoneyObject
+     */
+    putMoney(MoneyObject) {
+        if (this._isCardInserted()) {
+            console.log(1);
+            if (typeof MoneyObject === 'object') {
+                this.account.balance += this._convertMoneyToNumber(MoneyObject);
+                this._addMoneyToATMCash(MoneyObject);
+            } else {
+                this.messages.push(new Message('Не правильный денежный формат!'));
+            }
+        } else {
+            this.messages.push(new Message('Необходимо вставить карту для совершения действия с деньгами'));
+        }
+    }
 
+    /**
+     * В разработке
+     * @param {Number} value 
+     */
     getMoney(value) {
-        if (this.isCardInserted()) {
+        if (this._isCardInserted()) {
             if (value) {
                 if (value <= this.account.balance) {
                     return this.account.balance -= value;
@@ -84,48 +114,49 @@ class ATM {
     }
 
     /**
-     * Insert cart to ATM with simple validation
-     * @param {Object} card 
-     * @param {Number} pin 
+     * Вернуть карту из банкомата
      */
-    insertCard(card, pin) {
-        if (!this.isCardInserted() && card && pin) {
-            console.log(1);
-            // console.log(1);
-            return this.isCorrectCard(card.cardNumber, pin) ?
-                this.account = card :
-                this.messages.push({ date: new Date().toLocaleString(), message: 'incorrect card or pin, check you card and try again' });
-        } else {
-            return this.messages.push({ date: new Date().toLocaleString(), message: 'incorrect card or pin, check you card and try again' });
+    returnCard() {
+        this.account = null;
+    }
+
+    resetmessages() {
+        return this.messages = [];
+    }
+
+
+    /**
+     * Преобразует деньги из представления объекта в числовое значение
+     * @param {Object} MoneyObject 
+     * @return {Number} value
+     */
+    _convertMoneyToNumber(MoneyObject) {
+        let value = 0,
+            i;
+        for (i in MoneyObject) {
+            value += MoneyObject[i] * +i;
+        }
+        return value;
+    }
+
+    _removeMoneyFromATMCash(MoneyObject) {
+        for (let i in MoneyObject) {
+            this.cash[i] -= MoneyObject[i]
+        }
+    }
+
+    _addMoneyToATMCash(MoneyObject) {
+        for (let i in MoneyObject) {
+            this.cash[i] += MoneyObject[i]
         }
     }
 
     /**
-     * return card from ATM
-     */
-    returnCard() {
-        this.resetmessages();
-        return this.account = null;
-    }
-
-    /**
-     * Check the presence of the card
+     * Проверяем вставлена ли карта
      * @return {Boolean}
      */
-    isCardInserted() {
+    _isCardInserted() {
         return !!this.account;
-    }
-
-    /**
-     * adding card to ATM storage
-     * 
-     * -need to validate this
-     * @param {Object} card
-     */
-    addToStorage(card) {
-        return card ?
-            this.storage.push(card) :
-            this.messages.push({ date: new Date().toLocaleString(), message: 'You must enter any object to store it!' })
     }
 
     /**
@@ -133,9 +164,9 @@ class ATM {
      * @param {Number} value
      * @return {Object}  
      */
-    findMoneyDenomination(value) {
+    _findMoneyDenomination(value) {
         if (typeof value === 'number') {
-            if (this.isSummCorrect(value)) {
+            if (this._isSummCorrect(value)) {
                 let tmpValue = value,
                     denomination = {};
                 /* проходим по ключам объекта. нам важен порядок ключей, поэтому ключи впредставлены в виде строкогого значения ('+...') */
@@ -155,44 +186,41 @@ class ATM {
                 if (tmpValue === 0) {
                     return denomination;
                 } else {
-                    return this.messages.push({ date: new Date().toLocaleString(), message: 'В банкомате не хватает средств!' })
+                    return this.messages.push(new Message('В банкомате не хватает средств!'));
                 }
             }
         }
     }
 
     /**
-     * метод проверяем возможность выдать сумму без сдачи
-     * 
+     * Проверка возможности выдать указанную сумму без сдачи
      * @param {Number} value
      * @return {Boolean || Object} 
      */
-    isSummCorrect(value) {
+    _isSummCorrect(value) {
         if (value > 0) {
             let cashKeysArray = Object.keys(this.cash);
             let lastNominal = +cashKeysArray[cashKeysArray.length - 1];
             if (value % lastNominal === 0) {
                 return true;
             } else {
-                this.messages.push({ date: new Date().toLocaleString(), message: `невозможно выдать указанную сумму. Сумма должна быть кратна ${lastNominal}` })
+                this.messages.push(new Message(`невозможно выдать указанную сумму. Сумма должна быть кратна ${lastNominal}`))
                 return false;
             }
         } else {
-            this.messages.push({ date: new Date().toLocaleString(), message: `Сумма должна быть положительной` })
+            this.messages.push(new Message('Сумма должна быть положительной'));
             return false;
         }
 
     }
 
     /**
-     * Simple card validator
-     * Need to make separate class later
-     * 
+     * Проверка пин кода карты
      * @param {String} cardNumber 
      * @param {Number} pin 
      * @return {Boolean}
      */
-    isCorrectCard(cardNumber, pin) {
+    _isCorrectCard(cardNumber, pin) {
         let tmpCard = this.storage.find(card => card.cardNumber === cardNumber);
         if (tmpCard) {
             if (tmpCard.pin === pin) {
@@ -202,29 +230,17 @@ class ATM {
             return false;
         }
     }
-
-    resetmessages() {
-        return this.messages = [];
-    }
-
 }
 
-class Card {
-    constructor(cardNumber, balance, pin) {
-        this.cardNumber = cardNumber;
-        this.balance = balance;
-        this.pin = pin;
-        return this;
-    }
-}
+
 
 let myCard = new Card('1234', 846, 555);
 let atm = new ATM();
 // console.log(atm.account);
 // console.log(atm.messages);
-atm.addToStorage(myCard);
+atm.addCardToStorage(myCard);
 atm.insertCard(myCard, 555);
-// console.log(atm.messages);
+console.log(atm.messages);
 // console.log(atm.account);
 // console.log(atm.cash)
 atm.putMoney({ '+5000': 1 });

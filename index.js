@@ -99,12 +99,17 @@ class ATM {
     }
 
     /**
-     * В разработке
+     * Снять деньги со счета.
+     * Реализованные проверки: 
+     * -вставлена ли карта;
+     * -является ли переданное значение числом;
+     * -хватает ли денег на счете;
+     * -можно ли выдать сумму имеющимися в наличии купюрами
      * @param {Number} value 
      */
     getMoney(value) {
         if (this._isCardInserted()) {
-            if (typeof value === 'number' && _isSummCorrect(value)) {
+            if (typeof value === 'number' && this._isSummCorrect(value)) {
                 if (value <= this.account.balance) {
                     let moneyObject = this._findMoneyDenomination(value)
                     if (moneyObject) {
@@ -133,7 +138,8 @@ class ATM {
 
     /**
      * возвращает количество купюр
-     * @param {Object} MoneyObject 
+     * @param {Object} MoneyObject
+     * @return {Number}
      */
     _getCashCapacity(MoneyObject) {
         let count = 0;
@@ -259,23 +265,5 @@ class ATM {
     }
 }
 
-
-
 let myCard = new Card('1234', 846, 555);
 let atm = new ATM();
-// console.log(atm.account);
-atm.addCardToStorage(myCard);
-atm.insertCard(myCard, 555);
-console.log(atm.messages);
-// console.log(atm.account);
-// console.log(atm.cash)
-atm.putMoney({ '+5000': 1 });
-console.log(atm.messages);
-// console.log(atm.cash)
-atm.putMoney({ '+50': 2 });
-console.log(atm.messages);
-// atm.putMoney({ '+1000': 100 });
-console.log(atm.cash)
-console.log(atm.account.balance)
-    // console.log(atm.findMoneyDenomination(2450));
-console.log(atm._getCashCapacity(atm.cash));

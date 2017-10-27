@@ -22,6 +22,16 @@ class ATM {
         this.view = view;
         this.account = null;
         this.messages = [];
+
+        this.cash = {
+            '+5000': 0,
+            '+1000': 10,
+            '+500': 1,
+            '+100': 2,
+            '+50': 5
+        }
+
+
         this.storage = [{
                 cardNumber: '999',
                 balance: 1000,
@@ -36,25 +46,42 @@ class ATM {
         return this;
     }
 
-    showDetails() {
-        return this.isCardInserted() ?
-            this.view.showDetails(this) :
-            this.view.showMessage(this);
-    }
+    // showDetails() {
+    //     return this.isCardInserted() ?
+    //         this.view.showDetails(this) :
+    //         this.view.showMessage(this);
+    // }
 
+    // getLastMessage() {
+    //     return this.view.showMessage(this);
+    // }
+    // getBalance() {
+    //     return this.isCardInserted() ?
+    //         this.view.showBalance(this) :
+    //         this.view.showMessage(this);
+    // }
 
-    getBalance() {
-        return this.isCardInserted() ?
-            this.view.showBalance(this) :
-            this.view.showMessage(this);
-    }
     putMoney(value) {
         if (this.isCardInserted() && value && typeof value === 'number') {
+
             return this.account.balance += value;
         } else {
             return this.messages.push({ date: new Date().toLocaleString(), message: 'error with put money!' });
         }
     }
+    removeMoneyFromATMCash(obj) {
+        for (let i in obj) {
+
+            this.cash[i] -= obj[i]
+        }
+    }
+    addMoneyToATMCash(obj) {
+        for (let i in obj) {
+            this.cash[i] += obj[i]
+        }
+    }
+
+
     getMoney(value) {
         if (this.isCardInserted()) {
             if (value) {
@@ -84,8 +111,7 @@ class ATM {
                 this.account = card :
                 this.messages.push({ date: new Date().toLocaleString(), message: 'incorrect card or pin, check you card and try again' });
         } else {
-            this.messages.push({ date: new Date().toLocaleString(), message: 'incorrect card or pin, check you card and try again' });
-            return false;
+            return this.messages.push({ date: new Date().toLocaleString(), message: 'incorrect card or pin, check you card and try again' });
         }
     }
 
@@ -115,6 +141,64 @@ class ATM {
         return card ?
             this.storage.push(card) :
             this.messages.push({ date: new Date().toLocaleString(), message: 'You must enter any object to store it!' })
+    }
+
+    /**
+     * Метод 
+     * 
+     * @param {Number} value
+     * @return {Object} denomination - 
+     */
+    findMoneyDenomination(value) {
+        if (typeof value === 'number') {
+            if (this.isSummCorrect(value)) {
+                let tmpValue = value,
+                    denomination = {};
+                /* проходим по ключам объекта. нам важен порядок ключей, поэтому ключи впредставлены в виде строкогого значения ('+...') */
+                for (let i in this.cash) {
+                    /* получаем количество купюр  (+i - преобразуем значение в число) */
+                    denomination[i] = Math.floor(tmpValue / +i);
+                    /* получаем остаток от деления */
+                    tmpValue = tmpValue % +i;
+                    /* если количество купюр больше, чем есть в банкомате */
+                    if (denomination[i] > this.cash[i]) {
+                        /* в промежуточное число добавляем недостающую сумму, а количество купюр берем из ниличия в банкомате */
+                        tmpValue = tmpValue % +i + ((denomination[i] - this.cash[i]) * +i);
+                        denomination[i] = this.cash[i];
+                    }
+                }
+                /* если остается остаток, значит в банкомате не хватает средст, возвращаем сообщение об ошибке */
+                if (tmpValue === 0) {
+                    return denomination;
+                } else {
+                    this.messages.push({ date: new Date().toLocaleString(), message: 'В банкомате не хватает средств!' })
+                }
+            }
+
+        }
+    }
+
+    /**
+     * метод проверяем возможность выдать сумму без сдачи
+     * 
+     * @param {Number} value
+     * @return {Boolean || Object} 
+     */
+    isSummCorrect(value) {
+        if (value > 0) {
+            let cashKeysArray = Object.keys(this.cash);
+            let lastNominal = +cashKeysArray[cashKeysArray.length - 1];
+            if (value % lastNominal === 0) {
+                return true;
+            } else {
+                this.messages.push({ date: new Date().toLocaleString(), message: `невозможно выдать указанную сумму. Сумма должна быть кратна ${lastNominal}` })
+                return false;
+            }
+        } else {
+            this.messages.push({ date: new Date().toLocaleString(), message: `Сумма должна быть положительной` })
+            return false;
+        }
+
     }
 
     /**
@@ -153,39 +237,5 @@ class Card {
 
 let myCard = new Card('1234', 846, 555);
 let atm = new ATM();
-/* пробуем добавить карту в хранилище, не передавая аргументов */
-atm.addToStorage();
-console.log(atm.showDetails());
 
-/* добавляем карту в хранилище */
-atm.addToStorage(myCard);
-
-/* пробуем ввести некорректный пин */
-atm.insertCard(myCard, 55)
-console.log(atm.showDetails());
-
-/* Вводим правельные данные */
-atm.insertCard(myCard, 555)
-console.log(atm.showDetails());
-
-/* кладем деньги на счет */
-atm.putMoney(500);
-console.log(atm.showDetails());
-
-/* снимаем деньги */
-atm.getMoney(300);
-console.log(atm.showDetails());
-
-/* возвращаем карту */
-atm.returnCard();
-console.log(atm.showDetails());
-
-/* пробуем вызвать команту не передавая аргументов */
-atm.insertCard();
-console.log(atm.showDetails());
-
-/* вставляем карту, данные о которой есть в хранилище */
-atm.insertCard({ cardNumber: '999', balance: 1000, pin: 1234 }, 1234)
-
-console.log(atm.showDetails())
-console.log(atm.getBalance())
+console.log(atm.findMoneyDenomination(1450));

@@ -25,10 +25,11 @@ class Card {
  * @class ATM 
  */
 class ATM {
-    constructor() {
+    constructor(cashCapacity = 20) {
 
         this.account = null;
         this.messages = [];
+        this.cashCapacity = cashCapacity;
         /* Данные представлены в таком виде, потому что нам важен порядок ключей в объекте */
         this.cash = {
             '+5000': 0,
@@ -64,9 +65,11 @@ class ATM {
     insertCard(card, pin) {
         if (!this._isCardInserted()) {
             if (typeof card === 'object' && typeof pin === 'number') {
-                return this._isCorrectCard(card.cardNumber, pin) ?
-                    this.account = card :
+                if (this._isCorrectCard(card.cardNumber, pin)) {
+                    this.account = card;
+                } else {
                     this.messages.push(new Message('Не правильный pin код'));
+                }
             }
         } else {
             return this.messages.push(new Message('В банкомате уже находится карта'));
@@ -79,10 +82,14 @@ class ATM {
      */
     putMoney(MoneyObject) {
         if (this._isCardInserted()) {
-            console.log(1);
             if (typeof MoneyObject === 'object') {
-                this.account.balance += this._convertMoneyToNumber(MoneyObject);
-                this._addMoneyToATMCash(MoneyObject);
+                /* проверка вместимость хранилища для денег */
+                if (this._getCashCapacity(MoneyObject) + this._getCashCapacity(this.cash) <= this.cashCapacity) {
+                    this.account.balance += this._convertMoneyToNumber(MoneyObject);
+                    this._addMoneyToATMCash(MoneyObject);
+                } else {
+                    this.messages.push(new Message('Невозможно положить деньги, картридж заполнен купюрами'));
+                }
             } else {
                 this.messages.push(new Message('Не правильный денежный формат!'));
             }
@@ -97,19 +104,19 @@ class ATM {
      */
     getMoney(value) {
         if (this._isCardInserted()) {
-            if (value) {
+            if (typeof value === 'number' && _isSummCorrect(value)) {
                 if (value <= this.account.balance) {
-                    return this.account.balance -= value;
+                    let moneyObject = this._findMoneyDenomination(value)
+                    if (moneyObject) {
+                        this.account.balance -= value;
+                        this._removeMoneyFromATMCash(moneyObject);
+                    }
                 } else {
-                    return this.messages.push({ date: new Date().toLocaleString(), message: 'the value is greater then you card balance' });
-                }
-            } else {
-                {
-                    return this.messages.push({ date: new Date().toLocaleString(), message: 'please enter the value' });
+                    this.messages.push(new Message('Не хватает денег на счете!'));
                 }
             }
         } else {
-            return this.messages.push({ date: new Date().toLocaleString(), message: 'Insert your card please to get you balance' });
+            this.messages.push(new Message('Необходимо вставить карту для совершения действия с деньгами'));
         }
     }
 
@@ -121,9 +128,20 @@ class ATM {
     }
 
     resetmessages() {
-        return this.messages = [];
+        this.messages = [];
     }
 
+    /**
+     * возвращает количество купюр
+     * @param {Object} MoneyObject 
+     */
+    _getCashCapacity(MoneyObject) {
+        let count = 0;
+        for (let i in MoneyObject) {
+            count += MoneyObject[i];
+        }
+        return count;
+    }
 
     /**
      * Преобразует деньги из представления объекта в числовое значение
@@ -139,12 +157,20 @@ class ATM {
         return value;
     }
 
+    /**
+     * Удалить деньги из банкомата
+     * @param {Object} MoneyObject 
+     */
     _removeMoneyFromATMCash(MoneyObject) {
         for (let i in MoneyObject) {
             this.cash[i] -= MoneyObject[i]
         }
     }
 
+    /**
+     * Добавить деньги в банкомат
+     * @param {Object} MoneyObject 
+     */
     _addMoneyToATMCash(MoneyObject) {
         for (let i in MoneyObject) {
             this.cash[i] += MoneyObject[i]
@@ -186,7 +212,8 @@ class ATM {
                 if (tmpValue === 0) {
                     return denomination;
                 } else {
-                    return this.messages.push(new Message('В банкомате не хватает средств!'));
+                    this.messages.push(new Message('В банкомате не хватает средств!'));
+                    return -1;
                 }
             }
         }
@@ -237,12 +264,18 @@ class ATM {
 let myCard = new Card('1234', 846, 555);
 let atm = new ATM();
 // console.log(atm.account);
-// console.log(atm.messages);
 atm.addCardToStorage(myCard);
 atm.insertCard(myCard, 555);
 console.log(atm.messages);
 // console.log(atm.account);
 // console.log(atm.cash)
 atm.putMoney({ '+5000': 1 });
+console.log(atm.messages);
+// console.log(atm.cash)
+atm.putMoney({ '+50': 2 });
+console.log(atm.messages);
+// atm.putMoney({ '+1000': 100 });
 console.log(atm.cash)
+console.log(atm.account.balance)
     // console.log(atm.findMoneyDenomination(2450));
+console.log(atm._getCashCapacity(atm.cash));

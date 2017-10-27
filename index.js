@@ -2,9 +2,9 @@
  * @class Message
  */
 class Message {
-    constructor(message) {
+    constructor(text) {
         this.date = new Date().toLocaleString();
-        this.message = message;
+        this.text = text;
         return this;
     }
 }
@@ -39,7 +39,7 @@ class ATM {
             '+50': 5
         }
         this.storage = [
-            { cardNumber: '999', balance: 1000, pin: 1234 },
+            { cardNumber: '999', balance: 10000, pin: 1234 },
             { cardNumber: '888', balance: 500, pin: 5678 }
         ]
 
@@ -48,25 +48,28 @@ class ATM {
 
     /**
      * Сообщаем экземпляру объекта банкомата о карте
-     * (доп. проверки не реализованы)
-     * @param {Object} card
+     * @param {Object} newCard
      */
-    addCardToStorage(card) {
-        return card ?
-            this.storage.push(card) :
-            this.messages.push(new Message('Необходимо указать карту'))
+    addCardToStorage(newCard) {
+        let isAlreadyInStorage = this.storage.find(card => card.cardNumber === newCard.cardNumber);
+        if (!isAlreadyInStorage) {
+            this.storage.push(newCard);
+        } else {
+            this.messages.push(new Message('Данные о карте уже есть в памяти!'))
+        }
+
     }
 
     /**
      * Вставить карту в банкомат
-     * @param {Object} card 
+     * @param {String} cardNumber
      * @param {Number} pin 
      */
-    insertCard(card, pin) {
+    insertCard(cardNumber, pin) {
         if (!this._isCardInserted()) {
-            if (typeof card === 'object' && typeof pin === 'number') {
-                if (this._isCorrectCard(card.cardNumber, pin)) {
-                    this.account = card;
+            if (typeof cardNumber === 'string' && typeof pin === 'number') {
+                if (this._isCorrectCard(cardNumber, pin)) {
+                    this.account = this.storage.find(card => card.cardNumber === cardNumber);
                 } else {
                     this.messages.push(new Message('Не правильный pin код'));
                 }
@@ -267,3 +270,53 @@ class ATM {
 
 let myCard = new Card('1234', 846, 555);
 let atm = new ATM();
+
+
+// Добавляем данные о карте в память 
+atm.addCardToStorage(myCard);
+console.log(atm.messages);
+
+// Пробуем еще раз добавить данные о той же карте 
+atm.addCardToStorage(myCard);
+console.log(atm.messages);
+atm.resetmessages();
+
+// пробуем ввести неверный pin код
+atm.insertCard('1234', 55);
+console.log(atm.messages);
+atm.resetmessages();
+
+// вводим правельные данные
+atm.insertCard('1234', 555);
+
+// Проверим баланс
+console.log(atm.account.balance);
+
+// пробуем снять деньги
+atm.getMoney(451);
+console.log(atm.messages);
+atm.resetmessages();
+
+// пробуем превысить баланс
+atm.getMoney(900);
+console.log(atm.messages);
+atm.resetmessages();
+
+// Пробуем снять отрицательную сумму
+atm.getMoney(-100);
+console.log(atm.messages);
+atm.resetmessages();
+
+// снимаем деньги со счета
+atm.getMoney(400);
+console.log(atm.account.balance);
+
+// Кладен деньги на счет 
+atm.putMoney({ '1000': 8 })
+console.log(atm.account.balance);
+
+// пробуем положить еще
+atm.putMoney({ '1000': 1 })
+console.log(atm.account.balance);
+console.log(atm.messages);
+atm.resetmessages();

@@ -1,28 +1,14 @@
-class View {
-    showDetails(ATM) {
-        return { balance: ATM.account.balance, cardNumber: ATM.account.cardNumber }
-    }
-    showBalance(ATM) {
-        return ATM.account.balance;
-    }
-    showMessage(ATM) {
-        return { message: ATM.messages.length > 0 ? ATM.messages[ATM.messages.length - 1].message : 'Please insert you card to see details' }
-    }
-}
-
-
 /**
  * @class ATM 
  * class representing the realtization of the ATM, 
  * the view is made in a separate class
  */
 class ATM {
-    constructor(view = new View()) {
+    constructor() {
 
-        this.view = view;
         this.account = null;
         this.messages = [];
-
+        /* Данные представлены в таком виде, потому что нам важен порядок ключей в объекте */
         this.cash = {
             '+5000': 0,
             '+1000': 10,
@@ -30,45 +16,42 @@ class ATM {
             '+100': 2,
             '+50': 5
         }
-
-
-        this.storage = [{
-                cardNumber: '999',
-                balance: 1000,
-                pin: 1234
-            },
-            {
-                cardNumber: '888',
-                balance: 500,
-                pin: 5678
-            }
+        this.storage = [
+            { cardNumber: '999', balance: 1000, pin: 1234 },
+            { cardNumber: '888', balance: 500, pin: 5678 }
         ]
+
         return this;
     }
 
-    // showDetails() {
-    //     return this.isCardInserted() ?
-    //         this.view.showDetails(this) :
-    //         this.view.showMessage(this);
-    // }
-
-    // getLastMessage() {
-    //     return this.view.showMessage(this);
-    // }
-    // getBalance() {
-    //     return this.isCardInserted() ?
-    //         this.view.showBalance(this) :
-    //         this.view.showMessage(this);
-    // }
-
+    /**
+     * Метод добавляет деньги в банкомат и на счет карты
+     * @param {Object} value 
+     */
     putMoney(value) {
-        if (this.isCardInserted() && value && typeof value === 'number') {
-
-            return this.account.balance += value;
+        if (this.isCardInserted()) {
+            console.log(1);
+            if (typeof value === 'object') {
+                this.account.balance += this.summToNumber(value);
+                this.addMoneyToATMCash(value);
+            } else {
+                this.messages.push({ date: new Date().toLocaleString(), message: 'Не правильный формат денег!' });
+            }
         } else {
-            return this.messages.push({ date: new Date().toLocaleString(), message: 'error with put money!' });
+            this.messages.push({ date: new Date().toLocaleString(), message: 'Необходимо вставить карту для совершения действия с деньгами' });
         }
+
     }
+
+    summToNumber(obj) {
+        let sum = 0,
+            i;
+        for (i in obj) {
+            sum += obj[i] * +i;
+        }
+        return sum;
+    }
+
     removeMoneyFromATMCash(obj) {
         for (let i in obj) {
 
@@ -107,6 +90,8 @@ class ATM {
      */
     insertCard(card, pin) {
         if (!this.isCardInserted() && card && pin) {
+            console.log(1);
+            // console.log(1);
             return this.isCorrectCard(card.cardNumber, pin) ?
                 this.account = card :
                 this.messages.push({ date: new Date().toLocaleString(), message: 'incorrect card or pin, check you card and try again' });
@@ -144,10 +129,9 @@ class ATM {
     }
 
     /**
-     * Метод 
-     * 
+     * Метод проверяет возможно ли набрать сумму из имеющихся в банкомате купюр
      * @param {Number} value
-     * @return {Object} denomination - 
+     * @return {Object}  
      */
     findMoneyDenomination(value) {
         if (typeof value === 'number') {
@@ -171,10 +155,9 @@ class ATM {
                 if (tmpValue === 0) {
                     return denomination;
                 } else {
-                    this.messages.push({ date: new Date().toLocaleString(), message: 'В банкомате не хватает средств!' })
+                    return this.messages.push({ date: new Date().toLocaleString(), message: 'В банкомате не хватает средств!' })
                 }
             }
-
         }
     }
 
@@ -237,5 +220,13 @@ class Card {
 
 let myCard = new Card('1234', 846, 555);
 let atm = new ATM();
-
-console.log(atm.findMoneyDenomination(1450));
+// console.log(atm.account);
+// console.log(atm.messages);
+atm.addToStorage(myCard);
+atm.insertCard(myCard, 555);
+// console.log(atm.messages);
+// console.log(atm.account);
+// console.log(atm.cash)
+atm.putMoney({ '+5000': 1 });
+console.log(atm.cash)
+    // console.log(atm.findMoneyDenomination(2450));
